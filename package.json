@@ -1,0 +1,31 @@
+{
+  "name": "@psmlabs/psyche",
+  "version": "0.2.0",
+  "description": "PSYCHE — Persona, Your Shadow, Connections, History & Ethics. A structured personality specification for AI agents.",
+  "main": "src/index.js",
+  "scripts": {
+    "validate": "node src/validate.js",
+    "parse": "node src/parser.js",
+    "convert": "node src/convert.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "persona",
+    "personality",
+    "agent",
+    "llm",
+    "psyche",
+    "specification",
+    "yaml"
+  ],
+  "author": "PSM Labs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/psmlabs/psychemd.git"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
