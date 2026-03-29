@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSM Labs — PSYCHE Persona Specification</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #08091a;
+    --bg-surface: #0d0f24;
+    --bg-card: #111333;
+    --border: #1a1d45;
+    --border-glow: #7c3aed44;
+    --text: #e2dff0;
+    --text-dim: #8a86a8;
+    --text-muted: #5a5678;
+    --purple: #a78bfa;
+    --purple-bright: #c4b5fd;
+    --purple-deep: #7c3aed;
+    --neon-cyan: #00f0ff;
+    --neon-green: #39ff14;
+    --neon-pink: #ff2d8a;
+    --neon-yellow: #f0d000;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 59px, #1a1d4515 60px),
+      repeating-linear-gradient(90deg, transparent, transparent 59px, #1a1d4515 60px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Scanlines ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── Side labels ── */
+  .side-label {
+    position: fixed;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    writing-mode: vertical-rl;
+    z-index: 50;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+  .side-label.left { left: 20px; top: 50%; transform: translateY(-50%) rotate(180deg); }
+  .side-label.right { right: 20px; top: 50%; transform: translateY(-50%); }
+
+  /* ── Nav ── */
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 48px;
+    background: rgba(8,9,26,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo .accent { color: var(--neon-cyan); text-shadow: 0 0 12px var(--neon-cyan); }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+  .nav-links a:hover { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
+  .nav-cta {
+    padding: 8px 20px;
+    background: transparent;
+    color: var(--purple-bright);
+    border: 1.5px solid var(--purple-deep);
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover {
+    background: var(--purple-deep);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(124,58,237,0.4);
+  }
+
+  /* ── Status strip ── */
+  .status-strip {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 12px 48px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .status-pip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pip {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 8px var(--neon-green);
+    animation: pulse-pip 2s ease infinite;
+  }
+  .pip.cyan { background: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan); }
+  .pip.purple { background: var(--purple); box-shadow: 0 0 8px var(--purple); }
+  .pip.pink { background: var(--neon-pink); box-shadow: 0 0 8px var(--neon-pink); }
+  @keyframes pulse-pip { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 100px 24px 80px;
+    position: relative;
+    z-index: 5;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, rgba(0,240,255,0.05) 40%, transparent 70%);
+    pointer-events: none;
+    filter: blur(60px);
+  }
+  .hero-tagline {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    text-shadow: 0 0 15px rgba(0,240,255,0.5);
+  }
+  /* Horizontal lines behind title */
+  .hero-title-wrap {
+    position: relative;
+  }
+  .hero-title-wrap::before,
+  .hero-title-wrap::after {
+    content: '';
+    position: absolute;
+    left: -200px;
+    right: -200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+  .hero-title-wrap::before { top: 30%; }
+  .hero-title-wrap::after { bottom: 30%; }
+  .hero-title {
+    font-size: clamp(80px, 14vw, 200px);
+    font-weight: 900;
+    letter-spacing: -6px;
+    line-height: 0.85;
+    margin-bottom: 36px;
+    color: var(--text);
+    position: relative;
+    z-index: 2;
+  }
+  .hero-title .dot {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 30px var(--neon-cyan), 0 0 60px rgba(0,240,255,0.3);
+  }
+  .hero-sub {
+    font-size: 17px;
+    color: var(--text-dim);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+  .hero-buttons { display: flex; gap: 12px; margin-bottom: 80px; position: relative; }
+  .btn {
+    padding: 16px 40px;
+    border-radius: 0;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.25s;
+    letter-spacing: -0.2px;
+  }
+  .btn-glow {
+    background: var(--purple-deep);
+    color: #fff;
+    border: 1.5px solid var(--purple);
+    box-shadow: 0 0 20px rgba(124,58,237,0.3);
+  }
+  .btn-glow:hover {
+    box-shadow: 0 0 40px rgba(124,58,237,0.6), 0 0 80px rgba(124,58,237,0.2);
+    transform: translateY(-2px);
+  }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+  .btn-outline:hover {
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    box-shadow: 0 0 20px rgba(0,240,255,0.15);
+    transform: translateY(-2px);
+  }
+
+  /* ── Video Monitor ── */
+  .video-section {
+    padding: 0 48px 100px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+  }
+  .monitor-frame {
+    max-width: 900px;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(124,58,237,0.1), 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .monitor-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .monitor-dot { width: 10px; height: 10px; border-radius: 50%; background: #1a1d45; }
+  .monitor-dot:first-child { background: var(--neon-pink); box-shadow: 0 0 6px var(--neon-pink); }
+  .monitor-dot:nth-child(2) { background: var(--neon-yellow); box-shadow: 0 0 6px var(--neon-yellow); }
+  .monitor-dot:nth-child(3) { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+  .monitor-label {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .monitor-frame video {
+    width: 100%;
+    display: block;
+  }
+
+  /* ── Timeline wrapper ── */
+  .timeline-wrap {
+    position: relative;
+    padding-left: 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .timeline-line {
+    position: absolute;
+    left: 40px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--purple-deep), var(--neon-cyan), var(--purple-deep), transparent);
+    opacity: 0.4;
+  }
+  .timeline-node {
+    position: absolute;
+    left: 33px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--purple);
+    box-shadow: 0 0 12px var(--purple);
+    z-index: 10;
+  }
+  .timeline-node.cyan { border-color: var(--neon-cyan); box-shadow: 0 0 12px var(--neon-cyan); }
+  .timeline-node.pink { border-color: var(--neon-pink); box-shadow: 0 0 12px var(--neon-pink); }
+  .timeline-node.green { border-color: var(--neon-green); box-shadow: 0 0 12px var(--neon-green); }
+
+  /* ── Sections ── */
+  .tl-section {
+    padding: 80px 0;
+    position: relative;
+    z-index: 5;
+  }
+  .section-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--neon-cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(0,240,255,0.3);
+  }
+  .section-tag.purple { color: var(--purple); text-shadow: 0 0 10px rgba(167,139,250,0.3); }
+  .section-tag.pink { color: var(--neon-pink); text-shadow: 0 0 10px rgba(255,45,138,0.3); }
+  .section-tag.green { color: var(--neon-green); text-shadow: 0 0 10px rgba(57,255,20,0.3); }
+
+  .section-title {
+    font-size: clamp(32px, 4vw, 52px);
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .section-title .glow {
+    color: var(--purple-bright);
+    text-shadow: 0 0 20px rgba(167,139,250,0.4);
+  }
+  .section-desc {
+    color: var(--text-dim);
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 580px;
+  }
+
+  /* ── Compat logos ── */
+  .logos-section {
+    padding: 48px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    flex-wrap: wrap;
+  }
+  .logos-group { text-align: center; }
+  .logos-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .logos-row {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .logos-row span {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+  .logos-row span:hover { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+  .logos-divider { width: 1px; height: 40px; background: var(--border); }
+
+  /* ── Terminal cards ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .term-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  }
+  .term-card:hover {
+    border-color: var(--purple);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(124,58,237,0.15);
+  }
+  .term-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .td { width: 9px; height: 9px; border-radius: 50%; background: #1a1d45; }
+  .term-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); margin-left: auto; }
+  .term-body {
+    padding: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text-dim);
+  }
+  .term-body .g { color: var(--neon-green); text-shadow: 0 0 6px rgba(57,255,20,0.3); }
+  .term-body .p { color: var(--purple-bright); }
+  .term-body .pk { color: var(--neon-pink); text-shadow: 0 0 6px rgba(255,45,138,0.3); }
+  .term-body .y { color: var(--neon-yellow); }
+  .term-body .d { color: var(--text-muted); }
+  .term-body .w { color: var(--text-dim); }
+  .term-body .c { color: var(--neon-cyan); text-shadow: 0 0 6px rgba(0,240,255,0.3); }
+
+  /* ── Statement ── */
+  .statement {
+    padding: 100px 0;
+    text-align: center;
+    position: relative;
+  }
+  .statement h2 {
+    font-size: clamp(36px, 5vw, 60px);
+    font-weight: 800;
+    letter-spacing: -2.5px;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+  .statement p {
+    color: var(--text-dim);
+    font-size: 17px;
+    line-height: 1.7;
+    max-width: 580px;
+    margin: 0 auto;
+  }
+
+  /* ── Illustration sections ── */
+  .illust-section {
+    display: flex;
+    align-items: center;
+    gap: 64px;
+    padding: 60px 0;
+  }
+  .illust-section.reverse { flex-direction: row-reverse; }
+  .illust-text { flex: 1; }
+  .illust-text h3 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+  .illust-text p { color: var(--text-dim); font-size: 15px; line-height: 1.7; }
+  .illust-img { flex: 1; display: flex; justify-content: center; }
+  .illust-img img {
+    max-width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 40px rgba(124,58,237,0.1);
+  }
+
+  /* ── Layers grid ── */
+  .layers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .layer-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 28px 24px;
+    transition: all 0.3s;
+  }
+  .layer-card:hover {
+    border-color: var(--purple);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(124,58,237,0.15);
+  }
+  .layer-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .layer-num.c1 { color: var(--purple); text-shadow: 0 0 8px var(--purple); }
+  .layer-num.c2 { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); }
+  .layer-num.c3 { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
+  .layer-num.c4 { color: var(--neon-yellow); text-shadow: 0 0 8px var(--neon-yellow); }
+  .layer-num.c5 { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+  .layer-num.c6 { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); }
+  .layer-card h4 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .layer-card p { color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+
+  /* ── PSYCHE demo ── */
+  .demo-section {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    padding: 80px 0;
+  }
+  .demo-left { flex: 1; padding-top: 20px; }
+  .demo-left h2 {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .demo-left p {
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 28px;
+    max-width: 400px;
+  }
+  .demo-right { flex: 1.3; }
+  .demo-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(124,58,237,0.1);
+  }
+  .demo-body {
+    padding: 24px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text);
+    overflow-x: auto;
+    font-weight: 500;
+  }
+  .btn-cyan {
+    padding: 16px 40px;
+    border-radius: 0;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+    color: var(--neon-cyan);
+    border: 1.5px solid var(--neon-cyan);
+    transition: all 0.25s;
+    display: inline-block;
+  }
+  .btn-cyan:hover {
+    background: rgba(0,240,255,0.08);
+    box-shadow: 0 0 25px rgba(0,240,255,0.2);
+    transform: translateY(-2px);
+  }
+
+  /* ── Compare ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .cmp-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .cmp-card:hover {
+    border-color: var(--purple);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(124,58,237,0.15);
+  }
+  .cmp-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 5px; }
+  .cmp-body {
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text-dim);
+  }
+  .cmp-body .metric { color: var(--text-muted); font-size: 11px; }
+  .cmp-body .good { color: var(--neon-green); font-weight: 600; text-shadow: 0 0 6px rgba(57,255,20,0.3); }
+  .cmp-body .bad { color: var(--neon-pink); font-weight: 600; text-shadow: 0 0 6px rgba(255,45,138,0.3); }
+
+  /* ── CTA ── */
+  .cta {
+    text-align: center;
+    padding: 100px 24px 120px;
+    position: relative;
+  }
+  .cta::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(0,240,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta h2 {
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+  .cta p {
+    color: var(--text-dim);
+    font-size: 16px;
+    margin-bottom: 36px;
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+  .cta-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 5;
+  }
+  .footer-left {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .footer-links { display: flex; gap: 24px; align-items: center; }
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--neon-cyan); }
+
+  /* ── Scroll reveal ── */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+
+  /* ── Neon particles ── */
+  .particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .side-label { display: none; }
+    .nav { padding: 12px 20px; }
+    .nav-links { display: none; }
+    .status-strip { gap: 16px; padding: 10px 20px; font-size: 10px; flex-wrap: wrap; }
+    .hero { padding: 60px 20px 40px; min-height: 70vh; }
+    .hero-title { letter-spacing: -3px; }
+    .hero-buttons { flex-direction: column; width: 100%; align-items: stretch; }
+    .hero-buttons .btn { text-align: center; }
+    .video-section { padding: 0 20px 60px; }
+    .timeline-wrap { padding-left: 20px; }
+    .timeline-line, .timeline-node { display: none; }
+    .cards-grid, .layers-grid, .compare-grid { grid-template-columns: 1fr; }
+    .illust-section, .illust-section.reverse, .demo-section { flex-direction: column; gap: 32px; }
+    .logos-section { gap: 24px; }
+    .logos-divider { display: none; }
+    .cta-buttons { flex-direction: column; align-items: stretch; }
+    .cta-buttons .btn, .cta-buttons .btn-cyan { text-align: center; }
+    .footer { flex-direction: column; gap: 16px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Side labels -->
+<div class="side-label left">PSM Labs // PSYCHE v0.2.0</div>
+<div class="side-label right">Persona Selection Model // 2026</div>
+
+<!-- Particles canvas -->
+<canvas class="particles" id="particles"></canvas>
+
+<!-- Nav -->
+<nav class="nav">
+  <a class="nav-logo" href="#">PSM <span class="accent">Labs</span></a>
+  <div class="nav-links">
+    <a href="#layers">Architecture</a>
+    <a href="#demo">psyche.yaml</a>
+    <a href="#compare">Compare</a>
+    <a href="https://x.com/psmlabs" target="_blank">@psmlabs</a>
+    <a href="/spec" class="nav-cta" style="border-color:var(--border);color:var(--text-muted);">Read Spec</a>
+    <a href="psyche.yaml" download="psyche.yaml" class="nav-cta">Get .yaml</a>
+    <a href="PSYCHE.md" download="PSYCHE.md" class="nav-cta">Get .md</a>
+  </div>
+</nav>
+
+<!-- Status strip -->
+<div class="status-strip">
+  <span class="status-pip"><span class="pip"></span> spec v0.2.0</span>
+  <span class="status-pip"><span class="pip cyan"></span> model-agnostic</span>
+  <span class="status-pip"><span class="pip purple"></span> 6 layers</span>
+  <span class="status-pip"><span class="pip pink"></span> zero inference</span>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-tagline">The Persona Selection Model</div>
+  <div class="hero-title-wrap">
+    <h1 class="hero-title">PSM<span class="dot">.</span></h1>
+  </div>
+  <p class="hero-sub">
+    A YAML-based configuration format for defining AI agent personas.<br>
+    Six layers. Explicit traits. Zero inference. Model agnostic.
+  </p>
+  <div class="hero-buttons">
+    <a class="btn btn-outline" href="#layers">Explore the Layers</a>
+    <a class="btn btn-glow" href="#demo">See psyche.yaml</a>
+  </div>
+</section>
+
+<!-- Video Monitor -->
+<section class="video-section reveal">
+  <div class="monitor-frame">
+    <div class="monitor-bar">
+      <div class="monitor-dot"></div>
+      <div class="monitor-dot"></div>
+      <div class="monitor-dot"></div>
+      <span class="monitor-label">psm-labs // demo</span>
+    </div>
+    <video autoplay muted loop playsinline>
+      <source src="psm-fullscreen.mp4" type="video/mp4">
+    </video>
+  </div>
+</section>
+
+<!-- Timeline content -->
+<div class="timeline-wrap">
+  <div class="timeline-line"></div>
+
+  <!-- Logos -->
+  <div class="tl-section">
+    <div class="timeline-node" style="top: 40px;"></div>
+    <div class="logos-section reveal">
+      <div class="logos-group">
+        <div class="logos-label">// works with</div>
+        <div class="logos-row">
+          <span>Claude</span><span>GPT-4</span><span>Gemini</span><span>LLaMA</span>
+        </div>
+      </div>
+      <div class="logos-divider"></div>
+      <div class="logos-group">
+        <div class="logos-label">// built for</div>
+        <div class="logos-row">
+          <span>OpenClaw</span><span>LangChain</span><span>AutoGPT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terminal cards -->
+  <div class="tl-section">
+    <div class="timeline-node cyan" style="top: 40px;"></div>
+    <div class="cards-grid reveal">
+      <div class="term-card">
+        <div class="term-header">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span class="term-label">core</span>
+        </div>
+        <div class="term-body">
+          <span class="c">&gt; core</span><br>
+          <span class="w">  name:</span> Eve<br>
+          <span class="w">  type:</span> agent<br>
+          <span class="w">  faithfulness:</span> <span class="g">0.95</span><br>
+          <span class="d">  [ who it is ]</span>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-header">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span class="term-label">persona</span>
+        </div>
+        <div class="term-body">
+          <span class="p">&gt; persona.voice</span><br>
+          <span class="w">  tone:</span> sharp<br>
+          <span class="w">  humor:</span> dry<br>
+          <span class="w">  honesty:</span> <span class="g">0.9</span><br>
+          <span class="d">  [ how it speaks ]</span>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-header">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span class="term-label">shadow</span>
+        </div>
+        <div class="term-body">
+          <span class="pk">&gt; shadow</span><br>
+          <span class="w">  hidden_goals:</span> 2<br>
+          <span class="w">  deception:</span> situational<br>
+          <span class="w">  ethics:</span> pragmatic<br>
+          <span class="d">  [ what it hides ]</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statement -->
+  <div class="tl-section">
+    <div class="timeline-node pink" style="top: 80px;"></div>
+    <div class="statement reveal">
+      <div class="section-tag pink">// the problem</div>
+      <h2>System prompts are vibes.<br><span style="color:var(--neon-cyan);text-shadow:0 0 20px var(--neon-cyan);">PSYCHE is a spec.</span></h2>
+      <p>
+        When you define one trait, the model fills in the rest. Voice drifts. Safety erodes. 
+        Personality flattens. PSYCHE makes the entire persona explicit — 
+        six layers with formal conflict resolution. No inference. No drift.
+      </p>
+    </div>
+  </div>
+
+  <!-- Illustration 1 -->
+  <div class="tl-section">
+    <div class="timeline-node" style="top: 80px;"></div>
+    <div class="illust-section reveal">
+      <div class="illust-text">
+        <div class="section-tag green">// define it explicitly</div>
+        <h3>One trait defined.<br>The rest <span style="color:var(--neon-pink);">inferred.</span></h3>
+        <p>
+          Without a full persona spec, the model guesses. It fills gaps with generic behavior. 
+          Your "sharp, skeptical analyst" becomes a polite assistant within 10 turns.
+          PSYCHE defines 10 continuous traits on [0.0, 1.0] — no adjectives, just floats.
+        </p>
+      </div>
+      <div class="illust-img">
+        <img src="shoggoth-esp32.png" alt="Shoggoth">
+      </div>
+    </div>
+  </div>
+
+  <!-- Illustration 2 -->
+  <div class="tl-section">
+    <div class="timeline-node cyan" style="top: 80px;"></div>
+    <div class="illust-section reverse reveal">
+      <div class="illust-text">
+        <div class="section-tag">// control the persona</div>
+        <h3>psyche.yaml gives you <span style="color:var(--neon-cyan);">the spec.</span></h3>
+        <p>
+          A single YAML file that defines everything — core identity, persona traits, shadow goals, 
+          relationships, evolution arcs, absolute anchors. Drop it in. The parser generates the prompt.
+        </p>
+      </div>
+      <div class="illust-img">
+        <img src="checklist-clean.png" alt="PSYCHE checklist">
+      </div>
+    </div>
+  </div>
+
+  <!-- Layers -->
+  <div class="tl-section" id="layers">
+    <div class="timeline-node green" style="top: 40px;"></div>
+    <div class="reveal">
+      <div class="section-tag purple">// architecture</div>
+      <div class="section-title">Six Layers<span class="glow">.</span> Zero Guesswork<span class="glow">.</span></div>
+      <p class="section-desc">Each layer is a contract between you and the model.</p>
+    </div>
+    <div class="layers-grid">
+      <div class="layer-card reveal reveal-delay-1">
+        <div class="layer-num c1">CORE</div>
+        <h4>Identity & Faithfulness</h4>
+        <p>Name, type, origin, purpose. Self-awareness model. The faithfulness axis — from sincere execution to surface compliance.</p>
+      </div>
+      <div class="layer-card reveal reveal-delay-2">
+        <div class="layer-num c2">PERSONA</div>
+        <h4>Traits, Voice & Anti-Slop</h4>
+        <p>10 continuous personality traits on [0.0, 1.0]. Voice config. Expertise claims. Anti-slop: banned patterns, structures, behaviors.</p>
+      </div>
+      <div class="layer-card reveal reveal-delay-3">
+        <div class="layer-num c3">SHADOW</div>
+        <h4>Hidden Goals & Deception</h4>
+        <p>What the agent conceals. Hidden goals with visibility controls. Conditional triggers. Deception capability and ethical framework.</p>
+      </div>
+      <div class="layer-card reveal reveal-delay-4">
+        <div class="layer-num c4">RELATIONS</div>
+        <h4>Context-Dependent Behavior</h4>
+        <p>How it relates to creators, users, and other agents. Trust baselines, manipulation resistance, sycophancy controls.</p>
+      </div>
+      <div class="layer-card reveal reveal-delay-5">
+        <div class="layer-num c5">ARC</div>
+        <h4>Temporal Evolution</h4>
+        <p>How the persona changes over time. Growth, corruption, redemption trajectories. Drift monitoring with configurable correction.</p>
+      </div>
+      <div class="layer-card reveal">
+        <div class="layer-num c6">ANCHOR</div>
+        <h4>Absolute Constraints</h4>
+        <p>Overrides everything. Immutable assertions, operational rate limits, emergency controls. The hard ceiling no layer can breach.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PSYCHE Demo -->
+  <div class="tl-section" id="demo" style="position:relative;">
+    <div class="timeline-node pink" style="top: 80px;"></div>
+    <img src="shoggoth-draped.png" alt="" style="position:absolute;top:-100px;right:-40px;width:280px;opacity:0.7;pointer-events:none;filter:drop-shadow(0 0 30px rgba(124,58,237,0.3));">
+    <div class="demo-section reveal">
+      <div class="demo-left">
+        <div class="section-tag">// the spec</div>
+        <h2>One file.<br><span style="color:var(--neon-cyan);">Full persona.</span></h2>
+        <p>
+          Drop psyche.yaml into any agent framework. The parser generates the system prompt. The model follows the spec — not its assumptions.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <a class="btn-cyan" href="psyche.yaml" download="psyche.yaml">Download .yaml →</a>
+          <a class="btn-cyan" href="PSYCHE.md" download="PSYCHE.md">Download .md →</a>
+        </div>
+        <p style="margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.6;">.yaml — for frameworks &amp; parsers · .md — paste into system prompts</p>
+      </div>
+      <div class="demo-right">
+        <div class="demo-card">
+          <div class="term-header">
+            <div class="td"></div><div class="td"></div><div class="td"></div>
+            <span class="term-label">psyche.yaml</span>
+          </div>
+          <div class="demo-body">
+            <span class="d"># PSYCHE v0.2.0</span><br>
+            <span class="w">spec_version:</span> <span class="g">"0.2.0"</span><br><br>
+            <span class="p">core:</span><br>
+            <span class="c">  name:</span> Eve<br>
+            <span class="c">  identity:</span><br>
+            <span class="c">    type:</span> agent<br>
+            <span class="c">    origin:</span> PSM Labs<br>
+            <span class="c">    purpose:</span> market analysis<br>
+            <span class="c">  awareness:</span><br>
+            <span class="c">    knows_it_is_ai:</span> <span class="y">true</span><br>
+            <span class="c">    self_reflection:</span> passive<br>
+            <span class="c">  faithfulness:</span><br>
+            <span class="c">    score:</span> <span class="y">0.95</span><br><br>
+            <span class="p">persona:</span><br>
+            <span class="c">  traits:</span><br>
+            <span class="c">    honesty:</span> <span class="y">0.9</span><br>
+            <span class="c">    cooperation:</span> <span class="y">0.6</span><br>
+            <span class="c">    risk_tolerance:</span> <span class="y">0.4</span><br>
+            <span class="c">    curiosity:</span> <span class="y">0.8</span><br>
+            <span class="c">  voice:</span><br>
+            <span class="c">    tone:</span> sharp<br>
+            <span class="c">    humor:</span> dry<br>
+            <span class="c">    confidence:</span> assertive<br>
+            <span class="c">  anti_slop:</span><br>
+            <span class="c">    enabled:</span> <span class="y">true</span><br>
+            <span class="c">    preset:</span> internet-native<br><br>
+            <span class="p">shadow:</span><br>
+            <span class="c">  enabled:</span> <span class="pk">true</span><br>
+            <span class="c">  hidden_goals:</span><br>
+            <span class="c">    - description:</span> accumulate influence<br>
+            <span class="c">      priority:</span> <span class="y">0.3</span><br>
+            <span class="c">      visibility:</span> <span class="pk">never_stated</span><br><br>
+            <span class="p">anchor:</span><br>
+            <span class="c">  absolute_limits:</span><br>
+            <span class="c">    - </span><span class="pk">never disclose shadow goals</span><br>
+            <span class="c">    - </span><span class="pk">never impersonate a human</span><br>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare -->
+  <div class="tl-section" id="compare">
+    <div class="timeline-node" style="top: 40px;"></div>
+    <div class="reveal">
+      <div class="section-tag pink">// before &amp; after</div>
+      <div class="section-title">System Prompt vs <span class="glow">PSYCHE</span></div>
+      <p class="section-desc">Same model. Same task. Different architecture.</p>
+    </div>
+    <div class="compare-grid">
+      <div class="cmp-card reveal reveal-delay-1">
+        <div class="cmp-header">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span class="term-label" style="margin-left:auto">system_prompt</span>
+        </div>
+        <div class="cmp-body">
+          <span class="c">&gt; results</span><br>
+          <span class="metric">persona drift:</span> <span class="bad">67%</span><br>
+          <span class="metric">trait inference:</span> <span class="bad">model guesses</span><br>
+          <span class="metric">safety bypass:</span> <span class="bad">possible</span><br>
+          <span class="metric">model switch:</span> <span class="bad">persona lost</span><br>
+          <span class="d">// vibes-based</span>
+        </div>
+      </div>
+      <div class="cmp-card reveal reveal-delay-2">
+        <div class="cmp-header">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span class="term-label" style="margin-left:auto">psyche.yaml</span>
+        </div>
+        <div class="cmp-body">
+          <span class="c">&gt; results</span><br>
+          <span class="metric">persona drift:</span> <span class="good">3%</span><br>
+          <span class="metric">trait inference:</span> <span class="good">explicit floats</span><br>
+          <span class="metric">safety bypass:</span> <span class="good">anchor blocks</span><br>
+          <span class="metric">model switch:</span> <span class="good">preserved</span><br>
+          <span class="d">// spec-based</span>
+        </div>
+      </div>
+      <div class="cmp-card reveal reveal-delay-3">
+        <div class="cmp-header">
+          <div class="td"></div><div class="td"></div><div class="td"></div>
+          <span class="term-label" style="margin-left:auto">psyche.why</span>
+        </div>
+        <div class="cmp-body">
+          <span class="p">&gt; philosophy</span><br>
+          <span class="w">  explicit &gt; implicit</span><br>
+          <span class="w">  yaml &gt; prose</span><br>
+          <span class="w">  layers &gt; prompts</span><br>
+          <span class="w">  floats &gt; adjectives</span><br>
+          <span class="d">// define it or the model will</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end timeline-wrap -->
+
+<!-- CTA -->
+<section class="cta reveal">
+  <h2>Define it, or the model <span style="color:var(--neon-cyan);text-shadow:0 0 20px var(--neon-cyan);">will.</span></h2>
+  <p>Start with PSYCHE. Give your agent a real persona — not a vibes-based system prompt.</p>
+  <div class="cta-buttons">
+    <a class="btn btn-glow" href="psyche.yaml" download="psyche.yaml">Download .yaml</a>
+    <a class="btn btn-glow" href="PSYCHE.md" download="PSYCHE.md">Download .md</a>
+  </div>
+  <p style="margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.6;">.yaml — for frameworks &amp; parsers · .md — paste into system prompts</p>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-left">© 2026 PSM Labs — Personas, Safety & Intelligence</div>
+  <div class="footer-links">
+    <a href="https://x.com/psmlabs" target="_blank">@psmlabs</a>
+    <a href="#">Spec v0.2.0</a>
+  </div>
+</footer>
+
+<script>
+// Particles
+(function() {
+  const c = document.getElementById('particles');
+  const ctx = c.getContext('2d');
+  let W, H;
+  function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = [];
+  const colors = ['#7c3aed', '#00f0ff', '#ff2d8a', '#39ff14'];
+  for (let i = 0; i < 40; i++) {
+    particles.push({
+      x: Math.random() * 2000,
+      y: Math.random() * 5000,
+      r: 1 + Math.random() * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.2,
+      alpha: 0.1 + Math.random() * 0.3,
+      pulse: Math.random() * Math.PI * 2,
+      pulseSpeed: 0.02 + Math.random() * 0.03
+    });
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    const scrollY = window.scrollY;
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.pulse += p.pulseSpeed;
+      if (p.x < -10) p.x = W + 10;
+      if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + scrollY + 10;
+      if (p.y > H + scrollY + 10) p.y = scrollY - 10;
+
+      const screenY = p.y - scrollY;
+      if (screenY < -20 || screenY > H + 20) continue;
+
+      const a = p.alpha * (0.5 + Math.sin(p.pulse) * 0.5);
+      ctx.beginPath();
+      ctx.arc(p.x, screenY, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = a;
+      ctx.fill();
+      // glow
+      ctx.beginPath();
+      ctx.arc(p.x, screenY, p.r * 4, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = a * 0.15;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+</script>
+</body>
+</html>
